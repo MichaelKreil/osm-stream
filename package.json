@@ -1,0 +1,19 @@
+{
+  "name": "osm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "osm": "1_parse.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "level": "^7.0.0",
+    "osm-pbf-parser": "^2.3.0",
+    "through2": "^4.0.2"
+  }
+}
