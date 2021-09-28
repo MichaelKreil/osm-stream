@@ -1,5 +1,5 @@
 
-/bin/*.br
-/data/osm/
+/data/*/*.br
+/data/*/*.pbf
 /node_modules/
 /temp/
