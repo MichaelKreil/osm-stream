@@ -2,73 +2,65 @@
 
 "use strict"
 
+const fs = require('fs');
 const zlib = require('zlib');
 const river = require('mississippi-promise');
+const os = require('os');
 river.split = river.split.default;
 
 const maxBufferSize = 16*1024*1024;
 
-let compressor = BrotliCompressor();
-let bufferSize = 0;
-
 river.pipe(
 	process.stdin,
-	river.split('\n'),
-	river.through(
-		async function(chunk) {
-			chunk = chunk.toString()+'\n';
-			await compressor.write(chunk);
-			bufferSize += chunk.length;
-			//console.error('bufferSize', bufferSize);
+	splitter(),
+	river.parallel(
+		os.cpus().length,
+		function each(chunk) {
+			return new Promise(resolve => {
+				//console.error(chunk.length);
+				zlib.brotliCompress(
+					chunk,
+					{ params: {
+						[zlib.constants.BROTLI_PARAM_SIZE_HINT]: chunk.length,
+						[zlib.constants.BROTLI_PARAM_QUALITY]: 5,
+					} },
+					(err,buffer) => {
+						let header = Buffer.allocUnsafe(4);
+						header.writeUInt32LE(chunk.length, 0);
+						buffer = Buffer.concat([header, buffer]);
 
-			if (bufferSize < maxBufferSize) return
-
-			let result = await flush();
-			compressor = BrotliCompressor();
-			bufferSize = 0;
-			return result;
-		},
-		async function() {
-			if (bufferSize > 0) return await flush();
+						resolve(buffer);
+					},
+				)
+			})
 		}
 	),
 	process.stdout
 )
 
-async function flush() {
-	console.error('flush');
-	let buffer = await compressor.dump();
-	let header = Buffer.allocUnsafe(4);
-	header.writeUInt32LE(buffer.length, 0);
-	console.error(buffer.length);
-
-	return Buffer.concat([header,buffer]);
-}
-
-function BrotliCompressor(quality = 5) {
-	console.error('BrotliCompressor');
-	let compressor = zlib.createBrotliCompress({
-		params:{
-			[zlib.constants.BROTLI_PARAM_QUALITY]:quality
-		}
-	});
+function splitter() {
 	let buffers = [];
-	let toBuffer = river.to(async (data,enc) => buffers.push(data));
-	compressor.pipe(toBuffer);
+	let bufferSize = 0;
 
-	return { write, dump }
+	return river.through.obj(
+		async function(chunk) {
+			if (bufferSize > maxBufferSize) {
+				let index = chunk.indexOf(10);
+				if (index >= 0) {
+					buffers.push(chunk.slice(0,index));
+					this.push(Buffer.concat(buffers));
 
-	function write(chunk) {
-		return new Promise(res => {
-			if (compressor.write(chunk)) return res();
-			compressor.once('drain', () => res());
-		})
-	}
+					chunk = chunk.slice(index+1);
+					buffers = [];
+					bufferSize = 0;
+				}
+			}
 
-	function dump(chunk) {
-		return new Promise(res => {
-			toBuffer.once('finish', () => res(Buffer.concat(buffers)));
-			compressor.end();
-		})
-	}
+			buffers.push(chunk);
+			bufferSize += chunk.length;
+		},
+		async function() {
+			if (buffers.length > 0) return Buffer.concat(buffers);
+		}
+	)
 }

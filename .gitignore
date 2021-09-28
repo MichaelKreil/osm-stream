@@ -1,5 +1,5 @@
 
-/data/*/*.br
-/data/*/*.pbf
+*.geobuf
+*.pbf
 /node_modules/
 /temp/
