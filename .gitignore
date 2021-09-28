@@ -1,5 +1,5 @@
 
-*.geobuf
+*.geobin
 *.pbf
 /node_modules/
 /temp/
