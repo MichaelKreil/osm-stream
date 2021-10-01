@@ -40,7 +40,12 @@ async function start() {
 			}
 
 			if (item.type === type) {
-				await parser.add(item);
+				try {
+					await parser.add(item);
+				} catch (e) {
+					if (e.name === 'NotFoundError') return;
+					throw e;
+				}
 			} else {
 				let key = type + '->' + item.type;
 				switch (key) {
@@ -102,27 +107,25 @@ async function start() {
 		const buf2int = ArrayBuf2Int(4);
 
 		async function add(way) {
-			let idsBuf = ids2buf(way.refs);
-			let pointBuffers;
-			try {
-				pointBuffers = await Promise.all(way.refs.map((id,i) => {
-					let idBuf = idsBuf.slice(i*idMaxByteCount, (i+1)*idMaxByteCount)
-					return dbNodes.get(idBuf);
-				}));
-			} catch (e) {
-				if (e.name === 'NotFoundError') return;
-				throw e;
-			}
-
 			//await dbWays.set(id2buf(way.id), Buffer.concat(pointBuffers))
 
 			let table;
 			if (way.tags.area === 'yes') {
 				if (!(table = tables.find('polygon', way))) return;
+				let pointBuffers = await getPointBuffer();
 				await addGeoJSON(table, 'Polygon', [buffer2Points(pointBuffers)], way.tags);
 			} else {
 				if (!(table = tables.find('linestring', way))) return;
+				let pointBuffers = await getPointBuffer();
 				await addGeoJSON(table, 'Linestring', buffer2Points(pointBuffers), way.tags);
+			}
+
+			async function getPointBuffer() {
+				let idsBuf = ids2buf(way.refs);
+				return await Promise.all(way.refs.map((id,i) => {
+					let idBuf = idsBuf.slice(i*idMaxByteCount, (i+1)*idMaxByteCount)
+					return dbNodes.get(idBuf);
+				}));
 			}
 
 			function buffer2Points(pointBuffers) {
