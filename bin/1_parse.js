@@ -34,8 +34,9 @@ async function start() {
 					Math.floor(time/3600),
 					(100+Math.floor(time/60) % 60).toFixed(0).slice(1),
 					(100+time % 60).toFixed(0).slice(1),
-				].join(':')
-				process.stdout.write('\rscan '+(100*progress).toFixed(2)+'% - '+time);
+				].join(':');
+				let progressString = (100*progress).toFixed(2);
+				process.stdout.write(`\rscan ${type}s - ${progressString}% - ${time} `);
 				lastProgress = progress;
 			}
 
