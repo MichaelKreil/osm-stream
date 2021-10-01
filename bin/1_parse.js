@@ -21,12 +21,21 @@ async function start() {
 	let parser;
 	let type = 'null';
 	let lastProgress = -1;
+	let timeStart = Date.now();
 
 	await osm.Reader(
 		filename,
 		async (item, progress) => {
 			if (progress !== lastProgress) {
-				process.stdout.write('\rscan '+(100*progress).toFixed(2)+'%');
+				let time = Date.now();
+				time = (time-timeStart)*(1-progress)/progress;
+				time = Math.round(time/1000);
+				time = [
+					Math.floor(time/3600),
+					(100+Math.floor(time/60) % 60).toFixed(0).slice(1),
+					(100+time % 60).toFixed(0).slice(1),
+				].join(':')
+				process.stdout.write('\rscan '+(100*progress).toFixed(2)+'% - '+time);
 				lastProgress = progress;
 			}
 
