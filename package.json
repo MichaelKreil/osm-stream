@@ -13,6 +13,8 @@
   "license": "MIT",
   "dependencies": {
     "js-yaml": "^4.1.0",
-    "mississippi-promise": "^1.2.1"
+    "level": "^7.0.0",
+    "mississippi-promise": "^1.2.1",
+    "osm-pbf-parser": "^2.3.0"
   }
 }

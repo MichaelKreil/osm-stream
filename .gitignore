@@ -1,5 +1,6 @@
 
 *.geobin
 *.pbf
+*.geojsonseq
 /node_modules/
 /temp/

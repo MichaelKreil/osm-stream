@@ -13,5 +13,5 @@ wget -nc -P ../data/1_osm "https://ftp5.gwdg.de/pub/misc/openstreetmap/planet.op
 osmium export --progress -r -f geojsonseq ../data/1_osm/liechtenstein-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/liechtenstein.geobin
 osmium export --progress -r -f geojsonseq ../data/1_osm/berlin-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/berlin.geobin
 osmium export --progress -r -f geojsonseq ../data/1_osm/germany-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/germany.geobin
-osmium export --progress -r -f geojsonseq ../data/1_osm/europe-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/europe.geobin
-osmium export --progress -r -f geojsonseq ../data/1_osm/planet-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/planet.geobin
+osmium export --progress -r -i sparse_mem_map -f geojsonseq ../data/1_osm/europe-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/europe.geobin
+osmium export --progress -r -i dense_file_array -f geojsonseq ../data/1_osm/planet-latest.osm.pbf | node geojson2geobin.js > ../data/2_geobin/planet.geobin

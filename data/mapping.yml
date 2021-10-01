@@ -1,41 +1,41 @@
 tables:
-  admin:
-    mapping:
-      boundary: [administrative]
-    type: polygon
-  buildings:
-    mapping:
-      building: __any__
-    type: polygon
-  landusages:
-    mapping:
-      landuse: [park,forest,residential,retail,commercial,industrial,railway,cemetery,grass,farmyard,farm,farmland,orchard,vineyard,wood,meadow,village_green,recreation_ground,allotments,quarry,landfill,nature_reserve]
-      leisure: [park,garden,golf_course,sports_centre,pitch,track]
-      natural: [wood,land,desert,grassland,sand,heath,beach,wetland,scrub]
-      amenity: [college,school,university,parking,hospital,embassy]
-      aeroway: [aerodrome]
-    type: polygon
-  places:
-    mapping:
-      place: [country,state,region,archipelago,island,islet,county,city,town,village,hamlet,suburb,isolated_dwelling,allotments,neighbourhood,city_block,square,farm]
-    type: point
-    filter:
-      require:
-        name: __any__
-  natural:
-    mapping:
-      natural: [peak,bay,cape,volcano]
-    type: point
-    filter:
-      require:
-        name: __any__
-  railway:
-    filter:
-      reject:
-        area: yes
-    mapping:
-      railway: [rail,tram,light_rail,subway,narrow_gauge,preserved,funicular,monorail,disused]
-    type: linestring
+#   admin:
+#     mapping:
+#       boundary: [administrative]
+#     type: polygon
+#   buildings:
+#     mapping:
+#       building: __any__
+#     type: polygon
+#   landusages:
+#     mapping:
+#       landuse: [park,forest,residential,retail,commercial,industrial,railway,cemetery,grass,farmyard,farm,farmland,orchard,vineyard,wood,meadow,village_green,recreation_ground,allotments,quarry,landfill,nature_reserve]
+#       leisure: [park,garden,golf_course,sports_centre,pitch,track]
+#       natural: [wood,land,desert,grassland,sand,heath,beach,wetland,scrub]
+#       amenity: [college,school,university,parking,hospital,embassy]
+#       aeroway: [aerodrome]
+#     type: polygon
+#   places:
+#     mapping:
+#       place: [country,state,region,archipelago,island,islet,county,city,town,village,hamlet,suburb,isolated_dwelling,allotments,neighbourhood,city_block,square,farm]
+#     type: point
+#     filter:
+#       require:
+#         name: __any__
+#   natural:
+#     mapping:
+#       natural: [peak,bay,cape,volcano]
+#     type: point
+#     filter:
+#       require:
+#         name: __any__
+#   railway:
+#     filter:
+#       reject:
+#         area: yes
+#     mapping:
+#       railway: [rail,tram,light_rail,subway,narrow_gauge,preserved,funicular,monorail,disused]
+#     type: linestring
   roads:
     filter:
       reject:
@@ -44,43 +44,43 @@ tables:
       highway: [motorway,motorway_link,trunk,trunk_link,primary,primary_link,secondary,secondary_link,tertiary,tertiary_link,road,path,track,service,footway,bridleway,cycleway,steps,pedestrian,living_street,unclassified,residential,raceway]
       man_made: [pier,groyne]
     type: linestring
-  transport_points:
-    mapping:
-      highway: [bus_stop]
-      railway: [station,halt,tram_stop,crossing,level_crossing,subway_entrance]
-    type: point
-  waterareas:
-    mapping:
-      amenity: [swimming_pool]
-      landuse: [basin,reservoir]
-      leisure: [swimming_pool]
-      natural: [water]
-      waterway: [riverbank]
-    type: polygon
-  waterways:
-    mapping:
-      barrier: [ditch]
-      waterway: [stream,river,canal,drain,ditch]
-    type: linestring
-  pois:
-    mapping:
-      amenity: [university,school,library,hospital,fire_station,police,townhall,embassy,arts_centre,library,theatre,courthouse]
-      office: [government]
-      tourism: [information,museum]
-      aeroway: [aerodrome]
-    type: point
-  aois:
-    mapping:
-      amenity: [university,school,library,hospital,fire_station,police,townhall,embassy,arts_centre,library,theatre,courthouse]
-      office: [government]
-      tourism: [information,museum]
-      aeroway: [aerodrome]
-    type: polygon
-  housenumbers:
-    mapping:
-      addr:housenumber: __any__
-    type: point
-  housenumbers_area:
-    mapping:
-      addr:housenumber: __any__
-    type: polygon
+#   transport_points:
+#     mapping:
+#       highway: [bus_stop]
+#       railway: [station,halt,tram_stop,crossing,level_crossing,subway_entrance]
+#     type: point
+#   waterareas:
+#     mapping:
+#       amenity: [swimming_pool]
+#       landuse: [basin,reservoir]
+#       leisure: [swimming_pool]
+#       natural: [water]
+#       waterway: [riverbank]
+#     type: polygon
+#   waterways:
+#     mapping:
+#       barrier: [ditch]
+#       waterway: [stream,river,canal,drain,ditch]
+#     type: linestring
+#   pois:
+#     mapping:
+#       amenity: [university,school,library,hospital,fire_station,police,townhall,embassy,arts_centre,library,theatre,courthouse]
+#       office: [government]
+#       tourism: [information,museum]
+#       aeroway: [aerodrome]
+#     type: point
+#   aois:
+#     mapping:
+#       amenity: [university,school,library,hospital,fire_station,police,townhall,embassy,arts_centre,library,theatre,courthouse]
+#       office: [government]
+#       tourism: [information,museum]
+#       aeroway: [aerodrome]
+#     type: polygon
+#   housenumbers:
+#     mapping:
+#       addr:housenumber: __any__
+#     type: point
+#   housenumbers_area:
+#     mapping:
+#       addr:housenumber: __any__
+#     type: polygon
