@@ -6,7 +6,7 @@ const { resolve } = require('path');
 const osm = require('../lib/osm.js');
 const { Int2Buf, Buf2Int, ArrayInt2Buf, ArrayBuf2Int } = require('../lib/number-converter.js');
 
-const filename = resolve(__dirname, '../data/1_osm/germany-latest.osm.pbf');
+const filename = resolve(__dirname, '../data/1_osm/europe-latest.osm.pbf');
 const idMaxByteCount = 5;
 const geoOffset = 0x80000000;
 
