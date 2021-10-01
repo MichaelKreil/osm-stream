@@ -1,6 +1,10 @@
 
+*.dbf
 *.geobin
-*.pbf
 *.geojsonseq
+*.pbf
+*.prj
+*.shp
+*.shx
 /node_modules/
 /temp/
