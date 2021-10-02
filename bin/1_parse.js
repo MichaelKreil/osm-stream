@@ -5,15 +5,24 @@ const { resolve } = require('path');
 
 const osm = require('../lib/osm.js');
 const { Int2Buf, Buf2Int, ArrayInt2Buf, ArrayBuf2Int } = require('../lib/number-converter.js');
+const BufferHashMap = require('../lib/buffer-hash-map.js');
 
-const filename = resolve(__dirname, '../data/1_osm/liechtenstein-latest.osm.pbf');
-const idMaxByteCount = 5;
+const idMaxByteCount = 6;
 const geoOffset = 0x80000000;
+const hashCount = (1 << 24);
+const valueBytes = idMaxByteCount + 2*4;
+
+const filename = resolve(__dirname, '../data/1_osm/berlin-latest.osm.pbf');
+const folderNodes = resolve(__dirname, '../temp/nodes');
+const folderResult = resolve(__dirname, '../data/2_process');
+const filenameNodesResult = resolve(folderResult, 'node-hashmap.json');
+
+fs.mkdirSync(folderNodes, {recursive:true});
+fs.mkdirSync(folderResult, {recursive:true});
 
 start();
 
 async function start() {
-	let dbNodes = FastDB('nodes');
 	let dbWays = FastDB('ways');
 	let dbRelations = FastDB('relations');
 	let tables = TableFinder();
@@ -27,7 +36,7 @@ async function start() {
 		async (item, progress) => {
 			if (item.type === lastType) {
 				try {
-					await parser.add(item);
+					if (parser) await parser.add(item);
 				} catch (e) {
 					if (e.name === 'NotFoundError') return;
 					throw e;
@@ -38,8 +47,8 @@ async function start() {
 				let key = lastType + '->' + item.type;
 				switch (key) {
 					case 'null->node':    parser = parseNodes();     break;
-					case 'node->way':     parser = parseWays();      break;
-					case 'way->relation': parser = parseRelations(); break;
+					case 'node->way':     parser = false;/*parseWays();*/      break;
+					case 'way->relation': parser = false;/*parseRelations();*/ break;
 					default: throw Error(key);
 				}
 				lastType = item.type;
@@ -51,36 +60,63 @@ async function start() {
 
 	progressBar.finish();
 
-	await parser.flush();
+	if (parser) await parser.flush();
 
 	await tables.close();
 
 
 
 	function parseNodes() {
+		const value = Buffer.allocUnsafe(valueBytes);
+
 		const id2buf = Int2Buf(idMaxByteCount);
 		const geo2buf = ArrayInt2Buf(4);
 
+		let lastId = -1;
+		let hashmap, minId, maxId;
+		let hashmapList = [];
+
+
 		async function add(node) {
+			let id = node.id;
 
-			await dbNodes.set(
-				id2buf(node.id),
-				geo2buf([
-					Math.round(node.lon*1e7) + geoOffset,
-					Math.round(node.lat*1e7) + geoOffset,
-				]),
-			)
+			if (lastId >= (lastId = id)) throw Error(); // ensure in ascending order
 
-			let table;
-			if (!(table = tables.find('point', node))) return;
+			if (!hashmap || hashmap.isFull) {
+				flushHashmap();
+				hashmap = new BufferHashMap({ indexCount: hashCount, valueBytes });
+			}
+
+			let index = value.writeUInt48LE(id, 0);
+			index = value.writeUInt32LE(Math.round(node.lon*1e7) + geoOffset, 0);
+			index = value.writeUInt32LE(Math.round(node.lat*1e7) + geoOffset, 0);
+
+			hashmap.set(id % hashCount, value);
+
+			if (id < minId) minId = id;
+			if (id > maxId) maxId = id;
+
+			let table = tables.find('point', node);
+			if (!table) return;
 			await addGeoJSON(table, 'Point', [node.lon, node.lat], node.tags);
 		}
 
 		async function flush() {
-			await dbNodes.flush()
+			flushHashmap();
+			fs.writeFileSync(filenameNodesResult, JSON.stringify(hashmapList))
 		}
 
 		return {add, flush}
+
+		function flushHashmap() {
+			if (hashmap) {
+				let filename = resolve(folderNodes, ['nodes', minId, maxId].join('-')+'.bin');
+				let size = hashmap.save(filename);
+				hashmapList.push({ minId, maxId, filename, size });
+			}
+			minId =  1e20;
+			maxId = -1e20;
+		}
 	}
 
 	function parseWays() {
