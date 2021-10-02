@@ -19,16 +19,13 @@ async function start() {
 	let tables = TableFinder();
 
 	let parser;
-	let type = 'null';
+	let lastType = 'null';
 	let progressBar = new ProgressBar();
 
 	await osm.Reader(
 		filename,
 		async (item, progress) => {
-
-			progressBar.update(progress, `scan ${type}s`)
-
-			if (item.type === type) {
+			if (item.type === lastType) {
 				try {
 					await parser.add(item);
 				} catch (e) {
@@ -36,24 +33,19 @@ async function start() {
 					throw e;
 				}
 			} else {
-				let key = type + '->' + item.type;
+				if (parser) parser.flush();
+
+				let key = lastType + '->' + item.type;
 				switch (key) {
-					case 'null->node':
-						parser = parseNodes();
-					break;
-					case 'node->way':
-						parser.flush();
-						parser = parseWays();
-					break;
-					case 'way->relation':
-						parser.flush();
-						parser = parseRelations();
-					break;
-					default:
-						throw Error(key);
+					case 'null->node':    parser = parseNodes();     break;
+					case 'node->way':     parser = parseWays();      break;
+					case 'way->relation': parser = parseRelations(); break;
+					default: throw Error(key);
 				}
-				type = item.type;
+				lastType = item.type;
 			}
+
+			progressBar.update(progress, `scan ${lastType}s`)
 		}
 	)
 
