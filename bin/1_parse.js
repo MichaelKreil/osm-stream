@@ -6,7 +6,7 @@ const { resolve } = require('path');
 const osm = require('../lib/osm.js');
 const { Int2Buf, Buf2Int, ArrayInt2Buf, ArrayBuf2Int } = require('../lib/number-converter.js');
 
-const filename = resolve(__dirname, '../data/1_osm/europe-latest.osm.pbf');
+const filename = resolve(__dirname, '../data/1_osm/liechtenstein-latest.osm.pbf');
 const idMaxByteCount = 5;
 const geoOffset = 0x80000000;
 
@@ -20,37 +20,13 @@ async function start() {
 
 	let parser;
 	let type = 'null';
-	let lastProgress = -1;
-	let progressEntries = [];
+	let progressBar = new ProgressBar();
 
 	await osm.Reader(
 		filename,
 		async (item, progress) => {
-			if (progress !== lastProgress) {
-				let timeLeft = '';
-				let time = Date.now();
-				progressEntries.push([progress, time]);
 
-				if (progressEntries.length > 10) {
-
-					let speed = (time-progressEntries[0][1])/(progress-progressEntries[0][0]);
-
-					timeLeft = Math.round(speed*(1-progress)/1000);
-					timeLeft = ' - '+[
-						Math.floor(timeLeft/3600),
-						(100+Math.floor(timeLeft/60) % 60).toFixed(0).slice(1),
-						(100+timeLeft % 60).toFixed(0).slice(1),
-					].join(':');
-
-					if (progressEntries.length > 100) progressEntries = progressEntries.slice(-50);
-				}
-
-				let progressString = (100*progress).toFixed(2);
-
-				process.stdout.write(`\rscan ${type}s - ${progressString}%${timeLeft} `);
-
-				lastProgress = progress;
-			}
+			progressBar.update(progress, `scan ${type}s`)
 
 			if (item.type === type) {
 				try {
@@ -81,7 +57,8 @@ async function start() {
 		}
 	)
 
-	console.log();
+	progressBar.finish();
+
 	await parser.flush();
 
 	await tables.close();
@@ -341,5 +318,44 @@ function FastDB(name) {
 		for await (let value of stream) {
 			await cb(value);
 		}
+	}
+}
+
+
+function ProgressBar() {
+	let lastProgress = -1;
+	let progressEntries = [];
+	return { update, finish }
+
+	function update(progress, status) {
+		if (progress === lastProgress) return;
+
+		let timeLeft = '';
+		let time = Date.now();
+		progressEntries.push([progress, time]);
+
+		if (progressEntries.length > 10) {
+
+			let speed = (time-progressEntries[0][1])/(progress-progressEntries[0][0]);
+
+			timeLeft = Math.round(speed*(1-progress)/1000);
+			timeLeft = ' - '+[
+				Math.floor(timeLeft/3600),
+				(100+Math.floor(timeLeft/60) % 60).toFixed(0).slice(1),
+				(100+timeLeft % 60).toFixed(0).slice(1),
+			].join(':');
+
+			if (progressEntries.length > 100) progressEntries = progressEntries.slice(-50);
+		}
+
+		let progressString = (100*progress).toFixed(2);
+
+		process.stdout.write(`\r${status} - ${progressString}%${timeLeft} `);
+
+		lastProgress = progress;
+	}
+
+	function finish() {
+		process.stdout.write('- Finished\n');
 	}
 }
