@@ -13,12 +13,12 @@ const hashCount = (1 << 24);
 const valueBytes = idMaxByteCount + 2*4;
 
 const filename = resolve(__dirname, '../data/1_osm/europe-latest.osm.pbf');
-const folderNodes = resolve(__dirname, '../temp/nodes');
-const folderResult = resolve(__dirname, '../data/2_process');
-const filenameNodesResult = resolve(folderResult, 'node-hashmap.json');
+const folderHashmap = resolve(__dirname, '../data/2_process');
+const folderGeoJSON = resolve(__dirname, '../data/3_geojson')
+const filenameNodesResult = resolve(folderHashmap, 'node-hashmap.json');
 
-fs.mkdirSync(folderNodes, {recursive:true});
-fs.mkdirSync(folderResult, {recursive:true});
+fs.mkdirSync(folderHashmap, {recursive:true});
+fs.mkdirSync(folderGeoJSON, {recursive:true});
 
 start();
 
@@ -106,7 +106,7 @@ async function start() {
 
 		function flushHashmap() {
 			if (hashmap) {
-				let filename = resolve(folderNodes, ['nodes', minId, maxId].join('-')+'.bin');
+				let filename = resolve(folderHashmap, ['nodes', minId, maxId].join('-')+'.bin');
 				let size = hashmap.save(filename);
 				hashmapList.push({ minId, maxId, filename, size });
 			}
@@ -265,7 +265,7 @@ function TableFinder() {
 			if (table.filter.reject ) table.filter.reject  = makeFilter(table.filter.reject );
 		}
 
-		table.filename = resolve(__dirname, '../data/3_geojson/'+table.name+'.geojsonseq');
+		table.filename = resolve(folderGeoJSON, table.name+'.geojsonseq');
 		table.file = fs.openSync(table.filename, 'w');
 
 		let writeBuffer = [];
