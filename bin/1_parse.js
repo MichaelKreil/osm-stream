@@ -12,7 +12,7 @@ const geoOffset = 0x80000000;
 const hashCount = (1 << 24);
 const valueBytes = idMaxByteCount + 2*4;
 
-const filename = resolve(__dirname, '../data/1_osm/liechtenstein-latest.osm.pbf');
+const filename = resolve(__dirname, '../data/1_osm/austria-latest.osm.pbf');
 const folderNodes = resolve(__dirname, '../temp/nodes');
 const folderResult = resolve(__dirname, '../data/2_process');
 const filenameNodesResult = resolve(folderResult, 'node-hashmap.json');
@@ -42,7 +42,7 @@ async function start() {
 					throw e;
 				}
 			} else {
-				if (parser) parser.flush();
+				if (parser) await parser.flush();
 
 				let key = lastType + '->' + item.type;
 				switch (key) {
@@ -116,57 +116,83 @@ async function start() {
 	}
 
 	function parseWays() {
-		//const id2buf = Int2Buf(idMaxByteCount);
-		//const ids2buf = ArrayInt2Buf(idMaxByteCount);
-		//const buf2int = ArrayBuf2Int(4);
+		let nodeHashmapList = JSON.parse(fs.readFileSync(filenameNodesResult));
 
 		let wayBuffer = [];
+		let nodeBuffer = [];
 
 		async function add(way) {
+			way.refs = way.refs.map(id => {
+				let point = [id, way];
+				nodeBuffer.push(point);
+				return point;
+			})
 			wayBuffer.push(way);
-			if (wayBuffer.length > 100000) processWayBuffer();
-			//await dbWays.set(id2buf(way.id), Buffer.concat(pointBuffers))
-/*
-			let table;
-			if (way.tags.area === 'yes') {
-				if (!(table = tables.find('polygon', way))) return;
-				let pointBuffers = await getPointBuffer();
-				await addGeoJSON(table, 'Polygon', [buffer2Points(pointBuffers)], way.tags);
-			} else {
-				if (!(table = tables.find('linestring', way))) return;
-				let pointBuffers = await getPointBuffer();
-				await addGeoJSON(table, 'Linestring', buffer2Points(pointBuffers), way.tags);
-			}
-
-			async function getPointBuffer() {
-				let idsBuf = ids2buf(way.refs);
-				return await Promise.all(way.refs.map((id,i) => {
-					let idBuf = idsBuf.slice(i*idMaxByteCount, (i+1)*idMaxByteCount)
-					return dbNodes.get(idBuf);
-				}));
-			}
-
-			function buffer2Points(pointBuffers) {
-				return pointBuffers.map(buf => {
-					let point = buf2int(buf);
-					point[0] = (point[0]-geoOffset)/1e7;
-					point[1] = (point[1]-geoOffset)/1e7;
-					return point;
-				})
-			}
-			*/
+			if (wayBuffer.length > 1e7) await processWayBuffer();
 		}
 
 		async function flush() {
-			if (wayBuffer.length > 0) processWayBuffer();
-			//await dbWays.flush();
+			if (wayBuffer.length > 0) await processWayBuffer();
 		}
 
 		return {add, flush}
 
-		function processWayBuffer() {
-			console.log(wayBuffer);
-			process.exit();
+		async function processWayBuffer() {
+			nodeBuffer = nodeBuffer.sort((a,b) => a[0]-b[0]);
+
+			let hashmapIndex = 0;
+			let hashmap = loadHashmap(hashmapIndex);
+			nodeBuffer.forEach(e => {
+				if (e[1].ignore) return;
+
+				let id = e[0];
+
+				if (id > hashmap.maxId) {
+					hashmapIndex++;
+					hashmap = loadHashmap(hashmapIndex);
+				}
+
+				let buf = hashmap.get(id % hashCount);
+				if (buf) {
+					let index = 0;
+					while (index < buf.length) {
+						let dbId = buf.readUInt48LE(index);
+						if (id === dbId) {
+							e[0] = (buf.readUInt32LE(index+ 6) - geoOffset)/1e7;
+							e[1] = (buf.readUInt32LE(index+10) - geoOffset)/1e7;
+							return;
+						}
+						index += 14;
+					}
+				}
+
+				e[1].ignore = true;
+			})
+
+			for (let way of wayBuffer) {
+				if (way.ignore) continue
+
+				let table;
+				if (way.tags.area === 'yes') {
+					if (!(table = tables.find('polygon', way))) continue;
+					await addGeoJSON(table, 'Polygon', [way.refs], way.tags);
+				} else {
+					if (!(table = tables.find('linestring', way))) continue;
+					await addGeoJSON(table, 'Linestring', way.refs, way.tags);
+				}
+
+			}
+
+			wayBuffer = [];
+			nodeBuffer = [];
+
+			function loadHashmap(index) {
+				let entry = nodeHashmapList[index];
+				let hashmap = new BufferHashMap(entry.filename);
+				hashmap.minId = entry.minId;
+				hashmap.maxId = entry.maxId;
+				return hashmap;
+			}
 		}
 	}
 
@@ -196,7 +222,7 @@ async function addGeoJSON(table, type, coordinates, properties) {
 		if (!speed) return false;
 		if (/^[0-9]+/.test(speed)) return parseInt(speed, 10);
 		if (speed === 'walk') return 5;
-		if (speed === 'none') return 300;
+		if (speed === 'none') return 500;
 		return false;
 	})
 	//console.log(maxSpeed);
@@ -207,7 +233,8 @@ async function addGeoJSON(table, type, coordinates, properties) {
 	maxSpeed = Math.max(...maxSpeed);
 	//properties.maxSpeed = maxSpeed;
 	if (maxSpeed <= 30) return;
-	properties = {maxSpeed:1000+maxSpeed};
+
+	properties = { maxSpeed:maxSpeed, highway:properties.highway };
 
 	await table.write(JSON.stringify({
 		type: 'Feature',
@@ -225,6 +252,7 @@ function TableFinder() {
 		linestring:[],
 		point:[],
 	}
+	let closed = false;
 
 	let scheme = yaml.load(fs.readFileSync(resolve(__dirname, '../data/mapping.yml')));
 	for (const [tableName, table] of Object.entries(scheme.tables)) {
@@ -244,13 +272,16 @@ function TableFinder() {
 			if (writeBuffer.length > 1000) await table.flush();
 		}
 		table.flush = async () => {
+			if (closed) throw Error('already closed');
 			if (writeBuffer.length === 0) return;
 			fs.writeSync(table.file, writeBuffer.join(''));
 			writeBuffer = [];
 		}
 		table.close = async () => {
+			if (closed) throw Error('already closed');
 			await table.flush();
 			fs.closeSync(table.file)
+			closed = true;
 		}
 
 		tables.push(table);
