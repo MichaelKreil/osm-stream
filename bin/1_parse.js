@@ -12,7 +12,7 @@ const geoOffset = 0x80000000;
 const hashCount = (1 << 24);
 const valueBytes = idMaxByteCount + 2*4;
 
-const filename = resolve(__dirname, '../data/1_osm/berlin-latest.osm.pbf');
+const filename = resolve(__dirname, '../data/1_osm/liechtenstein-latest.osm.pbf');
 const folderNodes = resolve(__dirname, '../temp/nodes');
 const folderResult = resolve(__dirname, '../data/2_process');
 const filenameNodesResult = resolve(folderResult, 'node-hashmap.json');
@@ -47,7 +47,7 @@ async function start() {
 				let key = lastType + '->' + item.type;
 				switch (key) {
 					case 'null->node':    parser = parseNodes();     break;
-					case 'node->way':     parser = false;/*parseWays();*/      break;
+					case 'node->way':     parser = parseWays();      break;
 					case 'way->relation': parser = false;/*parseRelations();*/ break;
 					default: throw Error(key);
 				}
@@ -69,13 +69,9 @@ async function start() {
 	function parseNodes() {
 		const value = Buffer.allocUnsafe(valueBytes);
 
-		const id2buf = Int2Buf(idMaxByteCount);
-		const geo2buf = ArrayInt2Buf(4);
-
 		let lastId = -1;
 		let hashmap, minId, maxId;
 		let hashmapList = [];
-
 
 		async function add(node) {
 			let id = node.id;
@@ -88,8 +84,8 @@ async function start() {
 			}
 
 			let index = value.writeUInt48LE(id, 0);
-			index = value.writeUInt32LE(Math.round(node.lon*1e7) + geoOffset, 0);
-			index = value.writeUInt32LE(Math.round(node.lat*1e7) + geoOffset, 0);
+			index = value.writeUInt32LE(Math.round(node.lon*1e7) + geoOffset, index);
+			index = value.writeUInt32LE(Math.round(node.lat*1e7) + geoOffset, index);
 
 			hashmap.set(id % hashCount, value);
 
@@ -103,7 +99,7 @@ async function start() {
 
 		async function flush() {
 			flushHashmap();
-			fs.writeFileSync(filenameNodesResult, JSON.stringify(hashmapList))
+			fs.writeFileSync(filenameNodesResult, JSON.stringify(hashmapList, null, '\t'))
 		}
 
 		return {add, flush}
@@ -120,13 +116,17 @@ async function start() {
 	}
 
 	function parseWays() {
-		const id2buf = Int2Buf(idMaxByteCount);
-		const ids2buf = ArrayInt2Buf(idMaxByteCount);
-		const buf2int = ArrayBuf2Int(4);
+		//const id2buf = Int2Buf(idMaxByteCount);
+		//const ids2buf = ArrayInt2Buf(idMaxByteCount);
+		//const buf2int = ArrayBuf2Int(4);
+
+		let wayBuffer = [];
 
 		async function add(way) {
+			wayBuffer.push(way);
+			if (wayBuffer.length > 100000) processWayBuffer();
 			//await dbWays.set(id2buf(way.id), Buffer.concat(pointBuffers))
-
+/*
 			let table;
 			if (way.tags.area === 'yes') {
 				if (!(table = tables.find('polygon', way))) return;
@@ -154,13 +154,20 @@ async function start() {
 					return point;
 				})
 			}
+			*/
 		}
 
 		async function flush() {
-			await dbWays.flush();
+			if (wayBuffer.length > 0) processWayBuffer();
+			//await dbWays.flush();
 		}
 
 		return {add, flush}
+
+		function processWayBuffer() {
+			console.log(wayBuffer);
+			process.exit();
+		}
 	}
 
 	function parseRelations() {

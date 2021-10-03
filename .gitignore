@@ -6,5 +6,6 @@
 *.prj
 *.shp
 *.shx
+/data/2_process/*.json
 /node_modules/
 /temp/
