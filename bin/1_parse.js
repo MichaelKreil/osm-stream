@@ -12,7 +12,7 @@ const geoOffset = 0x80000000;
 const hashCount = (1 << 24);
 const valueBytes = idMaxByteCount + 2*4;
 
-const filename = resolve(__dirname, '../data/1_osm/austria-latest.osm.pbf');
+const filename = resolve(__dirname, '../data/1_osm/europe-latest.osm.pbf');
 const folderNodes = resolve(__dirname, '../temp/nodes');
 const folderResult = resolve(__dirname, '../data/2_process');
 const filenameNodesResult = resolve(folderResult, 'node-hashmap.json');
@@ -128,7 +128,7 @@ async function start() {
 				return point;
 			})
 			wayBuffer.push(way);
-			if (nodeBuffer.length > 1e7) await processWayBuffer();
+			if (nodeBuffer.length > 3e7) await processWayBuffer();
 		}
 
 		async function flush() {
