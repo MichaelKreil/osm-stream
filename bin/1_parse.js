@@ -128,16 +128,17 @@ async function start() {
 				return point;
 			})
 			wayBuffer.push(way);
-			if (wayBuffer.length > 1e7) await processWayBuffer();
+			if (nodeBuffer.length > 1e7) await processWayBuffer();
 		}
 
 		async function flush() {
-			if (wayBuffer.length > 0) await processWayBuffer();
+			if (nodeBuffer.length > 0) await processWayBuffer();
 		}
 
 		return {add, flush}
 
 		async function processWayBuffer() {
+			console.log('processWayBuffer', wayBuffer.length, nodeBuffer.length);
 			nodeBuffer = nodeBuffer.sort((a,b) => a[0]-b[0]);
 
 			let hashmapIndex = 0;
@@ -187,6 +188,7 @@ async function start() {
 			nodeBuffer = [];
 
 			function loadHashmap(index) {
+				console.log('loadHashmap', index);
 				let entry = nodeHashmapList[index];
 				let hashmap = new BufferHashMap(entry.filename);
 				hashmap.minId = entry.minId;
@@ -411,7 +413,7 @@ function ProgressBar() {
 				(100+timeLeft % 60).toFixed(0).slice(1),
 			].join(':');
 
-			if (progressEntries.length > 100) progressEntries = progressEntries.slice(-50);
+			if (progressEntries.length > 200) progressEntries = progressEntries.slice(-100);
 		}
 
 		let progressString = (100*progress).toFixed(2);
