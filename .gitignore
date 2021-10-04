@@ -2,6 +2,7 @@
 *.dbf
 *.geobin
 *.geojsonseq
+*.gz
 *.pbf
 *.prj
 *.shp
