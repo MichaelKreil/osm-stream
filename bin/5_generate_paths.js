@@ -9,6 +9,7 @@ const folderResult = resolve(__dirname, '../data/2_process');
 const geoOffset = 0x80000000;
 
 
+console.log('5. generate paths');
 
 (async function () {
 	let fileWays     = new FileStreamReader(resolve(folderResult, 'temp_ways.json.gz'));

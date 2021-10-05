@@ -10,13 +10,13 @@ const { FileStreamWriter } = require('../lib/filestream.js');
 
 
 
-const filenamePbf = resolve(__dirname, '../data/1_osm/berlin-latest.osm.pbf');
+const filenamePbf = resolve(__dirname, '../data/1_osm/liechtenstein-latest.osm.pbf');
 const folderResult = resolve(__dirname, '../data/2_process');
 const geoOffset = 0x80000000;
 
 fs.mkdirSync(folderResult, {recursive:true});
 
-
+console.log('1. parse pbf');
 
 (async function () {
 	const fileNodesHex  = new FileStreamWriter(resolve(folderResult, 'temp_nodes.txt.gz'));

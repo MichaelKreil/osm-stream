@@ -7,7 +7,7 @@ const { FileStreamReader, FileStreamWriter } = require('../lib/filestream.js');
 
 const folderResult = resolve(__dirname, '../data/2_process');
 
-
+console.log('3. merge nodes into way refs');
 
 (async function () {
 	let fileNodes    = new FileStreamReader(resolve(folderResult, 'temp_nodes.txt.gz'));
