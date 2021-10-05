@@ -75,6 +75,8 @@ console.log('1. parse pbf');
 
 			await fileNodesHex.write(buf);
 
+			if (Object.keys(node).length === 0) return;
+
 			delete node.info;
 			await fileNodesJSON.write(JSON.stringify(node)+'\n');
 		}
